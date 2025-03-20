@@ -103,16 +103,23 @@ function processActivities(accounts, leaderboardOverall) {
 
 // Function to generate the list of found caches
 function generateFoundCachesList(username, leaderboardOverall, activityGroupDay) {
-  let foundCachesList = '';
+  const fragment = document.createDocumentFragment(); // Create a document fragment to hold the list items
+
   // Iterate through entries for the given day
   for (const entry of leaderboardOverall[activityGroupDay]) {
     // Only include entries with a valid gcCode and matching username
     if (entry.gcCode !== '' && entry.username === username) {
-      // Add a list item with a link to the geocache
-      foundCachesList += `<li><a name="fullFoundCacheList_${entry.gcCode}" href="https://coord.info/${entry.gcCode}">${entry.gcCode}</a></li>`;
+      const listItem = document.createElement('li'); // Create a list item
+      const link = document.createElement('a'); // Create a link
+      link.name = `fullFoundCacheList_${entry.gcCode}`; // Set the name attribute
+      link.href = `https://coord.info/${entry.gcCode}`; // Set the href attribute
+      link.textContent = entry.gcCode; // Set the link text
+      listItem.appendChild(link); // Append the link to the list item
+      fragment.appendChild(listItem); // Append the list item to the fragment
     }
   }
-  return foundCachesList;
+
+  return fragment; // Return the document fragment
 }
 
 // Function to fetch geocache names for a list of gcCodes
@@ -129,12 +136,12 @@ async function fetchGeocacheNames(gcCodes) {
 
   // Wait for all promises to resolve
   const geocacheNames = await Promise.all(promises);
-  // Update the innerHTML of each link with the corresponding geocache name
+  // Update the textContent of each link with the corresponding geocache name
   geocacheNames.forEach((name, index) => {
     if (name) {
       const geocacheLinks = document.querySelectorAll(`a[name=fullFoundCacheList_${gcCodes[index]}]`);
       for (let i = 0; i < geocacheLinks.length; i++) {
-        geocacheLinks[i].innerHTML = name;
+        geocacheLinks[i].textContent = name; // Use textContent instead of innerHTML
       }
     }
   });
@@ -192,9 +199,21 @@ async function main() {
               // Generate the list of found caches for the user
               const foundCachesList = generateFoundCachesList(username, leaderboardOverall, activityGroupDay);
               const activityDetails = activities[j].querySelector('div.activity-details');
+
               // Add the list of found caches to the activity details if not already present
               if (activityDetails.querySelectorAll('details').length == 0) {
-                activityDetails.innerHTML += `<details class="full-list-of-found-caches"><summary>Full List of Found Caches</summary><ol>${foundCachesList}</ol></details>`;
+                const details = document.createElement('details'); // Create a details element
+                details.className = 'full-list-of-found-caches'; // Set the class name
+
+                const summary = document.createElement('summary'); // Create a summary element
+                summary.textContent = 'Full List of Found Caches'; // Set the summary text
+                details.appendChild(summary); // Append the summary to the details
+
+                const ol = document.createElement('ol'); // Create an ordered list element
+                ol.appendChild(foundCachesList); // Append the document fragment to the list
+                details.appendChild(ol); // Append the list to the details
+
+                activityDetails.appendChild(details); // Append the details to the activity details
               }
             }
           }
