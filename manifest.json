@@ -16,5 +16,10 @@
       "js": ["content.js"],
       "css": ["styles.css"]
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "geocaching-dashboard-enhancer@hankchow"
+    }
+  }
 }
