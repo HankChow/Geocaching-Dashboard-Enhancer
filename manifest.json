@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Geocaching Dashboard Enhancer",
+  "version": "0.1",
+  "description": "An Enhancer for Geocaching Dashboard",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.geocaching.com/account/dashboard",
+    "https://www.geocaching.com/play/leaderboard"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.geocaching.com/account/dashboard"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ]
+}
