@@ -147,6 +147,23 @@ async function fetchGeocacheNames(gcCodes) {
   });
 }
 
+
+// Get the date of the nearest activity group (no <h2> tag)
+function getNearestDate() {
+  let headerWithNearestDate = null;
+  
+  // might myteriously not get the <h2> tag
+  while (true) {
+    setTimeout(500);
+    if (document.querySelectorAll('div#ActivityFeedComponent > div > div.activity-block-header h2').length > 0) {
+      headerWithNearestDate = document.querySelector('div#ActivityFeedComponent > div > div.activity-block-header h2');
+      break;
+    }
+  }
+
+  return headerWithNearestDate.innerHTML.trim();
+}
+
 // Main logic
 async function main() {
   // Get serverParameters from the page
@@ -180,8 +197,7 @@ async function main() {
 
       // Get all activity groups (each group represents a day)
       const activityGroups = document.querySelectorAll('ol.activity-groups > li');
-      // Get the date of the nearest activity group (no <h2> tag)
-      const nearestDate = document.querySelector('div#ActivityFeedComponent > div > div.activity-block-header h2').innerHTML.trim();
+      const nearestDate = getNearestDate();
 
       // Iterate through each activity group
       for (let i = 0; i < activityGroups.length; i++) {
