@@ -117,26 +117,45 @@ async function fetchGeocacheNames(gcCodes) {
   });
 }
 
-// Function to fetch geocache details for a list of gcCodes
+// Function to fetch geocache details for a list of gcCodes with retry logic
 async function fetchGeocacheDetails(gcCodes, prCode) {
   const apiUrl = 'https://www.geocaching.com/api/live/v1/search/geocachepreview/';
-  const promises = gcCodes.map(async gcCode => {
-    const response = await fetch(apiUrl + gcCode);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-  });
 
-  const geocacheDetails = await Promise.all(promises);
-  geocacheDetails.forEach((detail, index) => {
-    if (detail) {
-      document.querySelectorAll(`a[name=fullFoundCacheList_${gcCodes[index]}]`).forEach(link => {
-        const icon = createGeocacheIcon(detail.geocacheType);
-        const metaData = createGeocacheMetaData(detail, prCode);
-        link.insertAdjacentElement('beforebegin', icon);
-        link.insertAdjacentElement('afterend', metaData);
-      });
+  // Helper function to fetch data with retries
+  const fetchWithRetry = async (url, retries = 2) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      if (retries > 0) {
+        console.warn(`Retrying fetch for ${url}, attempts left: ${retries}`);
+        return fetchWithRetry(url, retries - 1); // Retry the request
+      } else {
+        throw error; // No more retries, propagate the error
+      }
     }
-  });
+  };
+
+  // Use for...of to handle each gcCode individually
+  for (const gcCode of gcCodes) {
+    try {
+      const geocacheDetail = await fetchWithRetry(apiUrl + gcCode);
+
+      // Update the HTML for this gcCode immediately
+      if (geocacheDetail) {
+        const geocacheLinks = document.querySelectorAll(`a[name=fullFoundCacheList_${gcCode}]`);
+        geocacheLinks.forEach(link => {
+          const icon = createGeocacheIcon(geocacheDetail.geocacheType);
+          const metaData = createGeocacheMetaData(geocacheDetail, prCode);
+          link.insertAdjacentElement('beforebegin', icon);
+          link.insertAdjacentElement('afterend', metaData);
+        });
+      }
+    } catch (error) {
+      console.error(`Error fetching details for gcCode ${gcCode}:`, error);
+    }
+  }
 }
 
 // Function to create a geocache icon element
