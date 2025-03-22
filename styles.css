@@ -8,7 +8,7 @@ details.full-list-of-found-caches p {
 
 details.full-list-of-found-caches p img.cache-type {
     margin-right: 5px !important;
-    vertical-align: middle;
+    vertical-align: sub;
 }
 
 details.full-list-of-found-caches p a {
@@ -22,4 +22,8 @@ details.full-list-of-found-caches p span.cache-metadata {
 details.full-list-of-found-caches p span.cache-metadata-item {
     margin-left: 3px !important;
     margin-right: 3px !important;
+}
+
+details.full-list-of-found-caches p span.cache-metadata-item img {
+    vertical-align: text-bottom;
 }
