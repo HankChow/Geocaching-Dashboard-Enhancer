@@ -1,7 +1,25 @@
 details.full-list-of-found-caches {
-    margin-top: 4px !important
+    margin-top: 4px !important;
 }
 
-details.full-list-of-found-caches li {
-    margin: 2px !important
+details.full-list-of-found-caches p {
+    margin: 2px !important;
+}
+
+details.full-list-of-found-caches p img.cache-type {
+    margin-right: 5px !important;
+    vertical-align: middle;
+}
+
+details.full-list-of-found-caches p a {
+    font-weight: bold;
+}
+
+details.full-list-of-found-caches p span.cache-metadata {
+    font-size: smaller;
+}
+
+details.full-list-of-found-caches p span.cache-metadata-item {
+    margin-left: 3px !important;
+    margin-right: 3px !important;
 }
