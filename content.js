@@ -92,6 +92,7 @@ function generateFoundCachesList(username, leaderboardOverall, activityGroupDay)
       const link = document.createElement('a');
       link.name = `fullFoundCacheList_${entry.gcCode}`;
       link.href = `https://coord.info/${entry.gcCode}`;
+      link.className = 'full-found-cache-list-cache-name';
       link.textContent = entry.gcCode;
       pItem.appendChild(link);
       fragment.appendChild(pItem);
@@ -123,7 +124,7 @@ async function fetchGeocacheNames(gcCodes) {
 }
 
 // Function to fetch geocache details for a list of gcCodes
-async function fetchGeocacheDetails(gcCodes) {
+async function fetchGeocacheDetails(gcCodes, prCode) {
   const apiUrl = 'https://www.geocaching.com/api/live/v1/search/geocachepreview/';
   const promises = gcCodes.map(async (gcCode) => {
     const response = await fetch(apiUrl + gcCode);
@@ -137,7 +138,7 @@ async function fetchGeocacheDetails(gcCodes) {
       const geocacheLinks = document.querySelectorAll(`a[name=fullFoundCacheList_${gcCodes[index]}]`);
       for (let i = 0; i < geocacheLinks.length; i++) {
         const geocacheIcon = createGeocacheIcon(geocacheDetail.geocacheType);
-        const geocacheMetaData = createGeocacheMetaData(geocacheDetail);
+        const geocacheMetaData = createGeocacheMetaData(geocacheDetail, prCode);
 
         geocacheLinks[i].insertAdjacentElement('beforebegin', geocacheIcon);
         geocacheLinks[i].insertAdjacentElement('afterend', geocacheMetaData);
@@ -157,7 +158,7 @@ function createGeocacheIcon(geocacheType) {
 }
 
 // Function to create geocache metadata element
-function createGeocacheMetaData(geocacheDetail) {
+function createGeocacheMetaData(geocacheDetail, prCode) {
   const metaData = document.createElement('span');
   metaData.className = 'cache-metadata';
 
@@ -168,24 +169,73 @@ function createGeocacheMetaData(geocacheDetail) {
     metaData.appendChild(item);
   };
 
+  const geocacheOwnerItem = document.createElement('span');
+  geocacheOwnerItem.className = 'cache-metadata-item';
+  const geocacheOwner = document.createElement('a');
+  geocacheOwner.href = `https://coord.info/${geocacheDetail.owner.code}`;
+  geocacheOwner.textContent = geocacheDetail.owner.username;
+  geocacheOwnerItem.textContent = 'by ';
+  geocacheOwnerItem.appendChild(geocacheOwner);
+  metaData.appendChild(geocacheOwnerItem);
+
   addMetaDataItem('|');
   addMetaDataItem(geocacheDetail.code);
   addMetaDataItem(`${geocacheDetail.difficulty}/${geocacheDetail.terrain}`);
   addMetaDataItem([null, 'Not Chosen', 'Micro', 'Regular', 'Large', 'Virtual', 'Other', null, 'Small'][geocacheDetail.containerType]);
-  addMetaDataItem(`${geocacheDetail.favoritePoints} FP`);
 
-  if (geocacheDetail.userFound || geocacheDetail.userDidNotFind) {
-    const foundOrNotIcon = document.createElement('img');
-    foundOrNotIcon.src = geocacheDetail.userDidNotFind && !geocacheDetail.userFound
-      ? 'https://www.geocaching.com/api/live/v1/public/assets/icons/geocache/types/dnf.svg'
-      : 'https://www.geocaching.com/api/live/v1/public/assets/icons/geocache/types/smiley.svg';
-    foundOrNotIcon.height = 16;
-    foundOrNotIcon.width = 16;
+  if (geocacheDetail.favoritePoints > 0) {
+    const favoritePointIcon = document.createElement('img');
+    favoritePointIcon.className = 'favorite-point';
+    favoritePointIcon.src = 'https://www.geocaching.com/play/app/ui-icons/css/png/heart-filled.png';
+    favoritePointIcon.height = 8;
+    favoritePointIcon.width = 8;
 
-    const foundOrNotItem = document.createElement('span');
-    foundOrNotItem.className = 'cache-metadata-item';
-    foundOrNotItem.appendChild(foundOrNotIcon);
-    metaData.appendChild(foundOrNotItem);
+    const favoritePointsItem = document.createElement('span');
+    favoritePointsItem.className = 'cache-metadata-item';
+    favoritePointsItem.textContent = geocacheDetail.favoritePoints;
+    favoritePointsItem.appendChild(favoritePointIcon);
+    metaData.appendChild(favoritePointsItem);
+  }
+
+  if (geocacheDetail.owner.code == prCode) {
+    const ownerIcon = document.createElement('img');
+    ownerIcon.className = 'found-or-not';
+    ownerIcon.src = 'https://www.geocaching.com/api/live/v1/public/assets/icons/geocache/types/owned.svg'
+    ownerIcon.height = 16;
+    ownerIcon.width = 16;
+
+    const ownerItem = document.createElement('span');
+    ownerItem.className = 'cache-metadata-item';
+    ownerItem.appendChild(ownerIcon);
+    metaData.appendChild(ownerItem);
+  } else {
+    if (geocacheDetail.userFound || geocacheDetail.userDidNotFind) {
+      const foundOrNotIcon = document.createElement('img');
+      foundOrNotIcon.className = 'found-or-not';
+      foundOrNotIcon.src = geocacheDetail.userDidNotFind && !geocacheDetail.userFound
+        ? 'https://www.geocaching.com/api/live/v1/public/assets/icons/geocache/types/dnf.svg'
+        : 'https://www.geocaching.com/api/live/v1/public/assets/icons/geocache/types/smiley.svg';
+      foundOrNotIcon.height = 16;
+      foundOrNotIcon.width = 16;
+
+      const foundOrNotItem = document.createElement('span');
+      foundOrNotItem.className = 'cache-metadata-item';
+      foundOrNotItem.appendChild(foundOrNotIcon);
+      metaData.appendChild(foundOrNotItem);
+    }
+
+    if (!geocacheDetail.userFound && geocacheDetail.userCorrectedCoordinates) {
+      const solvedIcon = document.createElement('img');
+      solvedIcon.className = 'found-or-not';
+      solvedIcon.src = 'https://www.geocaching.com/api/live/v1/public/assets/icons/geocache/types/solved.svg'
+      solvedIcon.height = 16;
+      solvedIcon.width = 16;
+
+      const solvedItem = document.createElement('span');
+      solvedItem.className = 'cache-metadata-item';
+      solvedItem.appendChild(solvedIcon);
+      metaData.appendChild(solvedItem);
+    }
   }
 
   return metaData;
@@ -274,7 +324,7 @@ async function main() {
 
       if (gcCodes.size > 0) {
         await fetchGeocacheNames([...gcCodes]);
-        await fetchGeocacheDetails([...gcCodes]);
+        await fetchGeocacheDetails([...gcCodes], prCode);
       }
     }
   }

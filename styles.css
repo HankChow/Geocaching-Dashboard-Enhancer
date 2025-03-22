@@ -1,5 +1,9 @@
 details.full-list-of-found-caches {
-    margin-top: 4px !important;
+    margin-top: 5px !important;
+}
+
+details.full-list-of-found-caches summary {
+    margin-bottom: 5px !important;
 }
 
 details.full-list-of-found-caches p {
@@ -11,7 +15,7 @@ details.full-list-of-found-caches p img.cache-type {
     vertical-align: sub;
 }
 
-details.full-list-of-found-caches p a {
+details.full-list-of-found-caches p a.full-found-cache-list-cache-name {
     font-weight: bold;
 }
 
@@ -24,6 +28,10 @@ details.full-list-of-found-caches p span.cache-metadata-item {
     margin-right: 3px !important;
 }
 
-details.full-list-of-found-caches p span.cache-metadata-item img {
+details.full-list-of-found-caches p span.cache-metadata-item img.favorite-point {
+    vertical-align: middle;
+}
+
+details.full-list-of-found-caches p span.cache-metadata-item img.found-or-not {
     vertical-align: text-bottom;
 }
