@@ -1,3 +1,10 @@
+function log(msg) {
+  return; 
+  dt = new Date();
+  dtString = dt.toISOString();
+  console.log(`${dtString} ${msg}`);
+}
+
 // Function to inject script and get serverParameters from the page
 function getServerParameters() {
   return new Promise((resolve) => {
@@ -252,6 +259,19 @@ function createGeocacheMetaData(geocacheDetail, prCode) {
   return metaData;
 }
 
+// Funtion to get the activity feed
+function getActivityFeed() {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      const activityFeed = document.querySelector('div#_ActivityFeed div#ActivityFeedComponent');
+      if (activityFeed && activityFeed.querySelector('div.activity-block-header')) {
+        clearInterval(interval);
+        resolve(activityFeed);
+      }
+    }, 500);
+  });
+}
+
 // Function to get the date of the nearest activity group
 function getNearestDate() {
   return new Promise((resolve) => {
@@ -267,11 +287,14 @@ function getNearestDate() {
 
 // Main logic
 async function main() {
+  log('Main starts.');
   const serverParameters = await getServerParameters();
 
   if (serverParameters?.['user:info']?.referenceCode?.startsWith('PR')) {
     const prCode = serverParameters['user:info']['referenceCode'];
     const myself = serverParameters['user:info']['username'];
+    log(`prCode: ${prCode}`);
+    log(`myself: ${myself}`);
 
     const [currentWeekAccounts, previousWeekAccounts] = await Promise.all([
       fetchAllAccountsData(`https://www.geocaching.com/api/proxy/web/v1/leaderboard/1/account/${prCode}`),
@@ -279,26 +302,39 @@ async function main() {
     ]);
 
     if (currentWeekAccounts && previousWeekAccounts) {
+      log('Got current week data and previous week data.');
       const leaderboardOverall = {};
       processActivities(currentWeekAccounts, leaderboardOverall);
       processActivities(previousWeekAccounts, leaderboardOverall);
+      log('Merged current week data and previous week data.');
 
-      const activityGroups = document.querySelectorAll('ol.activity-groups > li');
-      const nearestDate = await getNearestDate();
+      const activityFeed = await getActivityFeed();
+      log('Got activity feed.');
+      const activityGroups = activityFeed.querySelectorAll('ol.activity-groups > li');
 
-      activityGroups.forEach((group, i) => {
-        const activityGroupDay = i > 0 ? group.querySelector('h2').innerHTML.trim() : nearestDate;
-        const activities = group.querySelectorAll('ol.activity-group > li.activity-item');
+      if (activityGroups.length > 0) {
+        log(`Got ${activityGroups.length} activity groups.`);
+        const nearestDate = await getNearestDate();
+        log(`Got nearest date: ${nearestDate}.`);
 
-        activities.forEach(activity => {
-          if (activity.getAttribute('data-logtypeid') === '2' && !activity.querySelector('h3 + div')) {
-            let username = activity.querySelector('h3 a.font-bold').innerHTML.trim();
-            username = username === 'You' ? myself : username;
+        activityGroups.forEach((group, i) => {
+          const activityGroupDay = i > 0 ? group.querySelector('h2').innerHTML.trim() : nearestDate;
+          const activities = group.querySelectorAll('ol.activity-group > li.activity-item');
 
-            const foundCachesList = generateFoundCachesList(username, leaderboardOverall, activityGroupDay);
-            const activityDetails = activity.querySelector('div.activity-details');
+          log(`Disposing with activity group of ${activityGroupDay}.`);
+          activities.forEach(activity => {
+            if (activity.getAttribute('data-logtypeid') === '2' && !activity.querySelector('h3 + div')) {
+              let username = activity.querySelector('h3 a.font-bold').innerHTML.trim();
+              username = username === 'You' ? myself : username;
 
-            if (!activityDetails.querySelector('details')) {
+              log(`Disposing with activities of ${username} on ${activityGroupDay}.`);
+              const foundCachesList = generateFoundCachesList(username, leaderboardOverall, activityGroupDay);
+              const activityDetails = activity.querySelector('div.activity-details');
+
+              if (activityDetails.querySelector('details')) {
+                log('<details> already exists, to rebuild it.');
+                activityDetails.querySelector('details').remove();
+              }
               const details = document.createElement('details');
               details.className = 'full-list-of-found-caches';
 
@@ -308,23 +344,30 @@ async function main() {
               details.appendChild(foundCachesList);
               activityDetails.appendChild(details);
             }
-          }
+          });
         });
-      });
 
-      const gcCodes = new Set();
-      Object.values(leaderboardOverall).forEach(entries => {
-        entries.forEach(entry => {
-          if (entry.gcCode) gcCodes.add(entry.gcCode);
+        const gcCodes = new Set();
+        Object.values(leaderboardOverall).forEach(entries => {
+          entries.forEach(entry => {
+            if (entry.gcCode) gcCodes.add(entry.gcCode);
+          });
         });
-      });
 
-      if (gcCodes.size > 0) {
-        await fetchGeocacheNames([...gcCodes]);
-        await fetchGeocacheDetails([...gcCodes], prCode);
+        if (gcCodes.size > 0) {
+          await fetchGeocacheNames([...gcCodes]);
+          await fetchGeocacheDetails([...gcCodes], prCode);
+        }
+      } else {
+        log('No activity groups.');
       }
+    } else {
+      log('Cannot get current week data or previous week data.')
     }
+  } else {
+    log('Cannot get the prCode.')
   }
+  log('Main finishes.');
 }
 
 // Start the main logic
