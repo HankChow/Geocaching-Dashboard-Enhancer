@@ -308,23 +308,45 @@ function createGeocacheLogContent(geocacheDetail, founderName) {
   logToggleLink.textContent = '[Show Log]';
   const noFoundLogDefaultContent = 'Loading...';
 
+  // to insert HTML safely
+  const safeInsertHTML = (element, html) => {
+    element.innerHTML = '';
+    if (!html) return;
+    
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const nodes = doc.body.childNodes;
+      while(nodes.length > 0) {
+        element.appendChild(nodes[0]);
+      }
+    } catch (e) {
+      console.warn('HTML parse error:', e);
+      element.textContent = html;
+    }
+  };
+
   logToggleLink.onclick = async function(e) {
     e.preventDefault();
     const content = this.nextElementSibling;
     content.style.display = content.style.display === 'none' ? 'block' : 'none';
     this.textContent = content.style.display === 'none' ? '[Show Log]' : '[Hide]';
     if (content.textContent == noFoundLogDefaultContent) {
-      const logBook = await fetchGeocacheLogs(geocacheDetail.code, founderName);
-      foundLogInLogBook = false;
-      for (let i = 0; i < logBook.data.length; i++) {
-        if (logBook.data[i].UserName == founderName && logBook.data[i].LogTypeID == 2) {
-          content.innerHTML = logBook.data[i].LogText;
-          foundLogInLogBook = true;
-          break;
+      try {
+        const logBook = await fetchGeocacheLogs(geocacheDetail.code, founderName);
+        const foundLog = logBook.data.find(
+          log => log.UserName === founderName && log.LogTypeID === 2
+        );
+        
+        if (foundLog) {
+          safeInsertHTML(content, foundLog.LogText);
+        } else {
+          content.textContent = 'No found log in the log book of this cache.';
         }
-      }
-      if (!foundLogInLogBook) {
-        content.textContent = 'No found log in the log book of this cache. ';
+      } catch (error) {
+        console.error('Error loading logs:', error);
+        content.textContent = 'Error loading log content';
       }
     }
   };
@@ -332,15 +354,14 @@ function createGeocacheLogContent(geocacheDetail, founderName) {
   const logContent = document.createElement('div');
   logContent.className = 'metadata-extra';
   logContent.style.display = 'none';
-  let foundLogInRecentActivities = false;
-  for (let i = 0; i < geocacheDetail.recentActivities.length; i++) {
-    if (geocacheDetail.recentActivities[i].owner.username == founderName && geocacheDetail.recentActivities[i].activityTypeId == 2) {
-      logContent.innerHTML = geocacheDetail.recentActivities[i].text;
-      foundLogInRecentActivities = true;
-      break;
-    }
-  }
-  if (!foundLogInRecentActivities) {
+  const recentLog = geocacheDetail.recentActivities.find(
+    act => act.owner.username === founderName && act.activityTypeId === 2
+  );
+  
+  // if (recentLog) {
+  if (false) {
+    safeInsertHTML(logContent, recentLog.text);
+  } else {
     logContent.textContent = noFoundLogDefaultContent;
   }
 
