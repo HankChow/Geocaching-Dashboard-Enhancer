@@ -358,8 +358,7 @@ function createGeocacheLogContent(geocacheDetail, founderName) {
     act => act.owner.username === founderName && act.activityTypeId === 2
   );
   
-  // if (recentLog) {
-  if (false) {
+  if (recentLog) {
     safeInsertHTML(logContent, recentLog.text);
   } else {
     logContent.textContent = noFoundLogDefaultContent;
