@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Geocaching Dashboard Enhancer",
-  "version": "0.2.8",
+  "version": "0.3.0",
   "description": "An Enhancer for Geocaching Dashboard",
   "permissions": [
     "activeTab"

@@ -155,8 +155,12 @@ async function fetchGeocacheDetails(gcCodes, prCode) {
         geocacheLinks.forEach(link => {
           const icon = createGeocacheIcon(geocacheDetail.geocacheType);
           const metaData = createGeocacheMetaData(geocacheDetail, prCode);
+          const founderName = link.parentElement.parentElement.getAttribute('data-founder-name');
+          const logContent = createGeocacheLogContent(geocacheDetail, founderName);
           link.insertAdjacentElement('beforebegin', icon);
-          link.insertAdjacentElement('afterend', metaData);
+          link.insertAdjacentElement('afterend', logContent.logContent);
+          link.insertAdjacentElement('afterend', logContent.logToggleLink);
+          link.insertAdjacentElement('afterend', metaData);          
         });
       }
     } catch (error) {
@@ -259,6 +263,90 @@ function createGeocacheMetaData(geocacheDetail, prCode) {
   return metaData;
 }
 
+// Function to fetch logbook of a geocache
+async function fetchGeocacheLogs(gcCode, founderName) {
+  const logsPageUrl = `https://www.geocaching.com/seek/geocache_logs.aspx?code=${gcCode}`;
+  const logsPageResponse = await fetch(logsPageUrl);
+  const logsPageHtml = await logsPageResponse.text();
+
+  const userTokenMatch = logsPageHtml.match(/userToken\s*=\s*'([^']+)'/);
+  if (!userTokenMatch || !userTokenMatch[1]) {
+    throw new Error('Failed to extract userToken from page');
+  }
+  const userToken = userTokenMatch[1];
+
+  let currentPage = 1;
+  let totalPages = 1;
+
+  while (currentPage <= totalPages) {
+    const logbookUrl = `https://www.geocaching.com/seek/geocache.logbook?tkn=${userToken}&idx=${currentPage}&num=100&sp=false&sf=false&decrypt=false`;
+    const logbookResponse = await fetch(logbookUrl);
+    if (!logbookResponse.ok) {
+      throw new Error(`Failed to fetch logbook page ${currentPage}: ${logbookResponse.status}`);
+    }
+    const logbookData = await logbookResponse.json();
+    if (currentPage === 1) {
+      totalPages = logbookData.pageInfo?.totalPages || 1;
+    }
+    const foundLog = logbookData.data?.find(log =>
+      log.UserName === founderName && log.LogTypeID === 2
+    );
+    if (foundLog) {
+      return logbookData;
+    }
+    currentPage++;
+  }
+
+  throw new Error(`No found log by ${founderName} in ${totalPages} pages`);
+}
+
+// Function to create geocache log content element
+function createGeocacheLogContent(geocacheDetail, founderName) {
+  const logToggleLink = document.createElement('a');
+  logToggleLink.className = 'metadata-toggle';
+  logToggleLink.href = '#';
+  logToggleLink.textContent = '[Show Log]';
+  const noFoundLogDefaultContent = 'Loading...';
+
+  logToggleLink.onclick = async function(e) {
+    e.preventDefault();
+    const content = this.nextElementSibling;
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    this.textContent = content.style.display === 'none' ? '[Show Log]' : '[Hide]';
+    if (content.textContent == noFoundLogDefaultContent) {
+      const logBook = await fetchGeocacheLogs(geocacheDetail.code, founderName);
+      foundLogInLogBook = false;
+      for (let i = 0; i < logBook.data.length; i++) {
+        if (logBook.data[i].UserName == founderName && logBook.data[i].LogTypeID == 2) {
+          content.innerHTML = logBook.data[i].LogText;
+          foundLogInLogBook = true;
+          break;
+        }
+      }
+      if (!foundLogInLogBook) {
+        content.textContent = 'No found log in the log book of this cache. ';
+      }
+    }
+  };
+
+  const logContent = document.createElement('div');
+  logContent.className = 'metadata-extra';
+  logContent.style.display = 'none';
+  let foundLogInRecentActivities = false;
+  for (let i = 0; i < geocacheDetail.recentActivities.length; i++) {
+    if (geocacheDetail.recentActivities[i].owner.username == founderName && geocacheDetail.recentActivities[i].activityTypeId == 2) {
+      logContent.innerHTML = geocacheDetail.recentActivities[i].text;
+      foundLogInRecentActivities = true;
+      break;
+    }
+  }
+  if (!foundLogInRecentActivities) {
+    logContent.textContent = noFoundLogDefaultContent;
+  }
+
+  return {logToggleLink: logToggleLink, logContent: logContent};
+}
+
 // Funtion to get the activity feed
 function getActivityFeed() {
   return new Promise((resolve) => {
@@ -337,6 +425,7 @@ async function main() {
               }
               const details = document.createElement('details');
               details.className = 'full-list-of-found-caches';
+              details.setAttribute('data-founder-name', username);
 
               const summary = document.createElement('summary');
               summary.textContent = 'Full List of Found Caches';
