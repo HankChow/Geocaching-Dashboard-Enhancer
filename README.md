@@ -9,6 +9,8 @@ This extension is only maintained by myself.
 ## Features
 
 * Show the full list of found caches when a friend finds more than 5 caches in a day.
+* Show metadata of each cache in the full list
+* Show the found log of caches in list accordingly
 
 ## To Do
 
