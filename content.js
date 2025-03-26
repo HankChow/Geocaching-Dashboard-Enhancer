@@ -418,13 +418,20 @@ async function main() {
 
       const activityFeed = await getActivityFeed();
       log('Got activity feed.');
+      const loadingSvg = document.createElement('div');
+      loadingSvg.id = 'loading-svg';
+      loadingSvg.className = 'loading-svg';
+      loadingSvg.title = 'Geocaching Dashboard Enhancer loading...';
+      document.querySelector('div#_ActivityFeed h1#ActivityFeedHeading').insertAdjacentElement('beforebegin', loadingSvg);
+      log('Added loading SVG.');
       const activityGroups = activityFeed.querySelectorAll('ol.activity-groups > li');
 
       if (activityGroups.length > 0) {
         log(`Got ${activityGroups.length} activity groups.`);
         const nearestDate = await getNearestDate();
         log(`Got nearest date: ${nearestDate}.`);
-
+        
+        const cachesNeedMetadata = new Set();
         activityGroups.forEach((group, i) => {
           const activityGroupDay = i > 0 ? group.querySelector('h2').innerHTML.trim() : nearestDate;
           const activities = group.querySelectorAll('ol.activity-group > li.activity-item');
@@ -437,6 +444,9 @@ async function main() {
 
               log(`Disposing with activities of ${username} on ${activityGroupDay}.`);
               const foundCachesList = generateFoundCachesList(username, leaderboardOverall, activityGroupDay);
+              foundCachesList.querySelectorAll('a').forEach(link => {
+                cachesNeedMetadata.add(link.textContent);
+              });
               const activityDetails = activity.querySelector('div.activity-details');
 
               if (activityDetails.querySelector('details')) {
@@ -459,7 +469,7 @@ async function main() {
         const gcCodes = new Set();
         Object.values(leaderboardOverall).forEach(entries => {
           entries.forEach(entry => {
-            if (entry.gcCode) gcCodes.add(entry.gcCode);
+            if (entry.gcCode && cachesNeedMetadata.has(entry.gcCode)) gcCodes.add(entry.gcCode);
           });
         });
 
@@ -476,6 +486,8 @@ async function main() {
   } else {
     log('Cannot get the prCode.')
   }
+  document.querySelector('div#loading-svg').remove();
+  log('Removed loading SVG.')
   log('Main finishes.');
 }
 
