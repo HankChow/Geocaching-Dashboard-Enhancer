@@ -422,7 +422,7 @@ async function main() {
       loadingSvg.id = 'loading-svg';
       loadingSvg.className = 'loading-svg';
       loadingSvg.title = 'Geocaching Dashboard Enhancer loading...';
-      document.querySelector('div#_ActivityFeed h1#ActivityFeedHeading').insertAdjacentElement('beforebegin', loadingSvg);
+      document.querySelector('div#_ActivityFeed h1#ActivityFeedHeading').insertAdjacentElement('afterend', loadingSvg);
       log('Added loading SVG.');
       const activityGroups = activityFeed.querySelectorAll('ol.activity-groups > li');
 
