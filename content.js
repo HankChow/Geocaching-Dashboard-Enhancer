@@ -75,10 +75,16 @@ function processActivities(accounts, leaderboardOverall) {
       if (['FoundIt', 'FoundLabCache'].includes(activity.activityType)) {
         const logDate = activity.logDateTime.split('T')[0];
         leaderboardOverall[logDate] = leaderboardOverall[logDate] || [];
-        leaderboardOverall[logDate].push({
+        const newActivity = {
           gcCode: activity.activityType === 'FoundIt' ? activity.logObjectCode : '',
           username: account.username
-        });
+        };
+        const exists = leaderboardOverall[logDate].some(item => 
+          item.gcCode === newActivity.gcCode && item.username === newActivity.username
+        );
+        if (!exists) {
+          leaderboardOverall[logDate].push(newActivity);
+        }
       }
     });
   });
@@ -481,13 +487,13 @@ async function main() {
         log('No activity groups.');
       }
     } else {
-      log('Cannot get current week data or previous week data.')
+      log('Cannot get current week data or previous week data.');
     }
   } else {
-    log('Cannot get the prCode.')
+    log('Cannot get the prCode.');
   }
   document.querySelector('div#loading-svg').remove();
-  log('Removed loading SVG.')
+  log('Removed loading SVG.');
   log('Main finishes.');
 }
 
