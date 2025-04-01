@@ -1,5 +1,5 @@
 function log(msg) {
-  return; 
+  // return; 
   dt = new Date();
   dtString = dt.toISOString();
   console.log(`${dtString} ${msg}`);
@@ -37,6 +37,46 @@ async function fetchAPIData(url) {
     return await response.json();
   } catch (error) {
     console.error('Error fetching API data:', error);
+    return null;
+  }
+}
+
+// Function to fetch search data
+async function getSearchData(url) {
+  let allSearchData = [];
+  let skip = 0;
+  const pageSize = 200;
+
+  try {
+    const response = await fetch(url);
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const nextDataScript = doc.getElementById('__NEXT_DATA__');
+    
+    if (nextDataScript) {
+      const nextData = JSON.parse(nextDataScript.textContent);
+      pageBuildId = nextData.buildId;
+      totalItemCount = nextData.props.pageProps.searchResults.total;
+      log(`pageBuildId: ${pageBuildId}`);
+      log(`totalItemCount: ${totalItemCount}`);
+
+      const nextPageApiUrl = `https://www.geocaching.com/_next/data/${pageBuildId}/en/play/results.json?sort=distance&asc=true&`
+      while (true) {
+        if (skip > totalItemCount) {
+          break;
+        }
+        const nextPageResponse = await fetch(`${nextPageApiUrl}${url.split('?')[1]}&skip=${skip}`);
+        const nextPageData = await nextPageResponse.json();
+        allSearchData = allSearchData.concat(nextPageData.pageProps.searchResults.results);
+        skip += pageSize;
+      }
+      return allSearchData;
+    } else {
+      throw new Error('__NEXT_DATA__ script not found');
+    }
+  } catch (error) {
+    console.error('Error fetching or parsing:', error);
     return null;
   }
 }
@@ -400,7 +440,7 @@ function getNearestDate() {
 }
 
 // Main logic
-async function main() {
+async function loadFullFoundCacheList() {
   log('Main starts.');
   const serverParameters = await getServerParameters();
 
@@ -497,5 +537,37 @@ async function main() {
   log('Main finishes.');
 }
 
-// Start the main logic
-main();
+async function loadRecentNearbyActivities() {
+  log('loadRecentNearbyActivities starts.');
+  const serverParameters = await getServerParameters();
+
+  if (serverParameters?.['user:info']?.referenceCode?.startsWith('PR')) {
+    const prCode = serverParameters['user:info']['referenceCode'];
+    const myself = serverParameters['user:info']['username'];
+    log(`prCode: ${prCode}`);
+    log(`myself: ${myself}`);
+
+    if (serverParameters?.['user:info']?.homeLocation) {
+      const homeLocation = serverParameters['user:info'].homeLocation;
+      const ns = homeLocation.Latitude > 0 ? 'N' : 'S';
+      const ew = homeLocation.Longitude > 0 ? 'E' : 'W';
+      const intLat = Math.trunc(homeLocation.Latitude);
+      const minLat = ((Math.abs(homeLocation.Latitude) - Math.abs(intLat)) * 60).toFixed(3);
+      const intLng = Math.trunc(homeLocation.Longitude);
+      const minLng = ((Math.abs(homeLocation.Longitude) - Math.abs(intLng)) * 60).toFixed(3);
+
+      const searchUrl = `https://www.geocaching.com/play/results?st=${ns}+${String(intLat).padStart(2, '0')}%C2%B0+${minLat}%27+${ew}+${String(intLng).padStart(2, '0')}%C2%B0+${minLng}%27&lat=${homeLocation.Latitude}&lng=${homeLocation.Longitude}&ot=coords&r=16`
+      const searchResult = await getSearchData(searchUrl);
+      searchResult.sort((a, b) => b.lastFoundDate.localeCompare(a.lastFoundDate));
+      log(JSON.stringify(searchResult[0]));
+    } else {
+      log('Cannot get the homeLocation.');
+    }
+  } else {
+    log('Cannot get the prCode.');
+  }
+  log('loadRecentNearbyActivities finishes.');
+}
+
+// loadFullFoundCacheList();
+loadRecentNearbyActivities();
