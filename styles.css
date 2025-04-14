@@ -57,6 +57,16 @@ a.metadata-toggle:hover {
     font-size: smaller;
 }
 
+span.all-logs-toggle {
+    margin-bottom: 5px !important;
+    font-size: smaller;
+}
+
+span.all-logs-toggle a {
+    color: #0066cc;
+    margin: 0 5px !important;
+}
+
 .loading-svg {
     background-image: url('static/loading.svg');
     height: 20px;
