@@ -209,7 +209,7 @@ async function fetchGeocacheDetails(gcCodes, prCode) {
           link.insertAdjacentElement('afterend', metaData);          
         });
       }
-      checkFinishedFounderDateSummaryMetadata();
+      // checkFinishedFounderDateSummaryMetadata();
     } catch (error) {
       console.error(`Error fetching details for gcCode ${gcCode}:`, error);
     }
@@ -440,49 +440,6 @@ function getNearestDate() {
   });
 }
 
-function checkFinishedFounderDateSummaryMetadata() {
-  document.querySelectorAll('details.full-list-of-found-caches').forEach(details => {
-    if (!details.getAttribute('data-loading-finished')) {
-      const pElements = details.querySelectorAll(':scope > p');
-      const metadataElements = details.querySelectorAll(':scope > p span.cache-metadata');
-      if (pElements.length === metadataElements.length) {
-        const toggleAllLogsSpan = details.querySelector('span.all-logs-toggle');
-        const showAllLogsLink = document.createElement('a');
-        showAllLogsLink.href = '#';
-        showAllLogsLink.textContent = '[Show All Logs]';
-        const hideAllLogsLink = document.createElement('a');
-        hideAllLogsLink.href = '#';
-        hideAllLogsLink.textContent = '[Hide All Logs]';
-        toggleAllLogsSpan.appendChild(showAllLogsLink);
-        toggleAllLogsSpan.appendChild(hideAllLogsLink);
-        if (!details.open) {
-          toggleAllLogsSpan.hidden = true;
-        }
-
-        showAllLogsLink.onclick = async function(e) {
-          e.preventDefault();
-          this.parentElement.parentElement.parentElement.querySelectorAll('a.metadata-toggle').forEach(item => {
-            if (item.textContent == '[Show Log]') {
-              item.click();
-            }
-          })
-        };
-
-        hideAllLogsLink.onclick = async function(e) {
-          e.preventDefault();
-          this.parentElement.parentElement.parentElement.querySelectorAll('a.metadata-toggle').forEach(item => {
-            if (item.textContent == '[Hide]') {
-              item.click();
-            }
-          })
-        };
-
-        details.setAttribute('data-loading-finished', true);
-      }
-    }
-  })
-}
-
 // Main logic
 async function loadFullFoundCacheList() {
   log('Main starts.');
@@ -549,18 +506,39 @@ async function loadFullFoundCacheList() {
               details.setAttribute('data-found-date', activityGroupDay);
 
               const summary = document.createElement('summary');
-              summary.textContent = 'Full List of Found Caches';              
+              summary.textContent = 'Full List of Found Caches';     
+              
               const toggleAllLogsSpan = document.createElement('span');
               toggleAllLogsSpan.className = 'all-logs-toggle';
-              summary.insertAdjacentElement('beforeend', toggleAllLogsSpan);
-              details.addEventListener('toggle', function() {
-                if (this.open) {
-                  this.querySelector('span.all-logs-toggle').hidden = false;
-                } else {
-                  this.querySelector('span.all-logs-toggle').hidden = true;
-                }
-              });
+              const showAllLogsLink = document.createElement('a');
+              showAllLogsLink.href = '#';
+              showAllLogsLink.textContent = '[Show All Logs]';
+              const hideAllLogsLink = document.createElement('a');
+              hideAllLogsLink.href = '#';
+              hideAllLogsLink.textContent = '[Hide All Logs]';
+              toggleAllLogsSpan.appendChild(showAllLogsLink);
+              toggleAllLogsSpan.appendChild(hideAllLogsLink);
+        
+              showAllLogsLink.onclick = async function(e) {
+                e.preventDefault();
+                this.parentElement.parentElement.parentElement.querySelectorAll('a.metadata-toggle').forEach(item => {
+                  if (item.textContent == '[Show Log]') {
+                    item.click();
+                  }
+                })
+              };
+        
+              hideAllLogsLink.onclick = async function(e) {
+                e.preventDefault();
+                this.parentElement.parentElement.parentElement.querySelectorAll('a.metadata-toggle').forEach(item => {
+                  if (item.textContent == '[Hide]') {
+                    item.click();
+                  }
+                })
+              };
+              
               details.appendChild(summary);
+              details.appendChild(toggleAllLogsSpan);
               details.appendChild(foundCachesList);
               activityDetails.appendChild(details);
             }
