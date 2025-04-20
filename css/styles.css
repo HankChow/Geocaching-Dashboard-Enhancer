@@ -68,7 +68,7 @@ span.all-logs-toggle a {
 }
 
 .loading-svg {
-    background-image: url('static/loading.svg');
+    background-image: url('../static/loading.svg');
     height: 20px;
     width: 20px;
     background-size: contain;
