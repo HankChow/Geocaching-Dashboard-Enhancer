@@ -17,7 +17,9 @@
         "js/utils.js",
         "js/loadFullFoundCacheList.js"
       ],
-      "css": ["styles.css"]
+      "css": [
+        "css/styles.css"
+      ]
     }
   ],
   "browser_specific_settings": {
